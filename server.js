@@ -1,6 +1,6 @@
-const {client, syncAndSeed} = require('./db/index')
+const { client, syncAndSeed } = require("./db/index");
 const express = require("express");
-const path = require('path')
+const path = require("path");
 
 const app = express();
 
@@ -35,6 +35,49 @@ app.get("/", async (req, res, next) => {
             </body>
         </html>
     `);
+  } catch (ex) {
+    next(ex);
+  }
+});
+
+app.get("/brands/:id", async (req, res, next) => {
+  try {
+    //   let response = await client.query('SELECT * FROM "Brand" WHERE id=$1;', [req.params.id]);
+    //   const brand = response.rows[0];
+    //   response = await client.query('SELECT * FROM "Sneaker" WHERE brand_id=$1;', [req.params.id]);
+    //   const sneakers = response.rows;
+
+    //Something similar with Promises.all()
+    const promises = [
+        client.query('SELECT * FROM "Brand" WHERE id=$1;', [req.params.id]),
+        client.query('SELECT * FROM "Sneaker" WHERE brand_id=$1;', [req.params.id])
+    ];
+    const [brandsResponse, sneakersResponse] = await Promise.all(promises);
+    const brand = brandsResponse.rows[0];
+    const sneakers = sneakersResponse.rows;
+    res.send(`
+          <html>
+              <head>
+                  <title>Brands Page</title>
+                  <link rel='stylesheet' href='/assets/styles.css'/>
+              </head>
+              <body>
+                  <h1>Sneaker World</h1>
+                  <h2><a href='/'>Brands</a> (${brand.name})</h2>
+                  <ul>
+                      ${sneakers
+                        .map(
+                          (sneaker) => `
+                        <li>
+                            ${sneaker.name}
+                        </li>
+                      `
+                        )
+                        .join("")}
+                  </ul>
+              </body>
+          </html>
+      `);
   } catch (ex) {
     next(ex);
   }
